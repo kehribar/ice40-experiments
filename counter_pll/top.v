@@ -16,19 +16,21 @@ module top (
   output LED7,  
 );
 
+  wire rst;
   wire clk60;
   wire [7:0] counter;
 
   clockgen #()
   clockgen_inst(
     .clk(clk12),
-    .clkout(clk60)
+    .clkout(clk60),
+    .reset(rst)
   );
 
   higherlevel #()
   higherlevel_inst(
-    .clk(clk),
-    .rst(0),
+    .clk(clk60),
+    .rst(rst),
     .counter_out(counter)
   );
 

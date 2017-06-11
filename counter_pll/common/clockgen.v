@@ -3,8 +3,11 @@
 // ----------------------------------------------------------------------------
 module clockgen(
   input clk, 
-  output clkout
+  output clkout,
+  output reset
 );
+
+wire pll_lock;
    
 // The following code multiplies the 12 MHz on the board to 60 MHz 
 // (12 MHz * 80 / 16) using a PLL VCO Frequency of 960 MHz (12 MHz * 80):
@@ -21,7 +24,11 @@ pll_inst(
   .RESETB(1'b1),
   .BYPASS(1'b0),
   .REFERENCECLK(clk),
-  .PLLOUTCORE(clkout)
+  .PLLOUTCORE(clkout),
+  .LOCK(pll_lock)
 );
+
+// Generate reset signal from pll lock
+assign reset = ~pll_lock;
 
 endmodule
