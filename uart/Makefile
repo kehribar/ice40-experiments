@@ -3,7 +3,7 @@
 # 
 #------------------------------------------------------------------------------
 PROJ     = top
-SOURCES  = common/clken_gen.v common/clockgen.v
+SOURCES  = common/clockgen.v
 SOURCES += common/uart_tx.v
 PIN_DEF  = pinmap.pcf
 DEVICE   = hx8k
@@ -74,6 +74,9 @@ iterate_w_timing:
 	@echo ""
 	@echo "-------------------------------------------------------------------"
 	make clean && make all -j32 && make timing && make prog
+
+terminal:
+	sudo python -m serial.tools.miniterm /dev/ttyUSB1 1000000
 
 # .SECONDARY:
 # .PHONY: all prog clean

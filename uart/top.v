@@ -19,11 +19,12 @@ module top(
 );
 
   // --------------------------------------------------------------------------
-  reg rst;
-  reg clk60;
-  reg clken;
-  reg tx_reg;
-  reg tx_busy;
+  wire rst;
+  wire clk60;
+  wire tx_busy;
+  wire tx_reg;
+
+  // --------------------------------------------------------------------------
   reg tx_start;
   reg tx_busy_d;
   reg [7:0] test_char;
@@ -44,8 +45,8 @@ module top(
       test_char <= 8'b0;
     end else begin    
       if((tx_busy == 1'b0)&&(tx_busy_d == 1'b1)) begin
-        test_char <= test_char + 1;
         tx_start <= 1'b1;              
+        test_char <= test_char + 1;
       end else begin
         tx_start <= 1'b0;     
       end
@@ -54,20 +55,11 @@ module top(
   end
 
   // --------------------------------------------------------------------------
-  clken_gen #(
-    .DIV_RATIO(60-1) // (60MHz / 1MBaud) = 60
+  uart_tx #(
+    .CLKDIV(60-1) // (60MHz / 1MBaud) = 60
   )
-  clken_gen_inst(
-    .clk(clk60),
-    .rst(rst),
-    .clken(clken)
-  );
-
-  // --------------------------------------------------------------------------
-  uart_tx #()
   uart_inst(
     .clk(clk60),
-    .en(clken),
     .rst(rst),
     .txdata(test_char),
     .transmit(tx_start),
