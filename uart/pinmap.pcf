@@ -16,3 +16,13 @@ set_io LED7 C3
 # -----------------------------------------------------------------------------
 set_io RX B10
 set_io TX B12
+
+# -----------------------------------------------------------------------------
+set_io DBG7 C16
+set_io DBG6 D16
+set_io DBG5 E16
+set_io DBG4 F16
+set_io DBG3 G16
+set_io DBG2 F15
+set_io DBG1 E14
+set_io DBG0 D15

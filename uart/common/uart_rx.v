@@ -2,67 +2,73 @@
 // 
 // 
 // ----------------------------------------------------------------------------
-module uart_tx #(
+module uart_rx #(
   parameter CLKDIV = 128
 )(
   input clk,
   input rst,
-  input tx_start,
-  output tx_pin,
-  output tx_busy,
-  input [7:0] txdata
+  input rx_pin,
+  output [7:0] rxdata,
+  output rxvalid,
+  input rxack  
 );
 
 // ----------------------------------------------------------------------------
-reg [$clog2(CLKDIV-1):0] txcnt;
+localparam integer HALF_PERIOD = CLKDIV/2;
+reg [$clog2(3*HALF_PERIOD):0] rxcnt;
 
 // ----------------------------------------------------------------------------
-reg tx_busy_reg;
+reg rx_pin_d;
+reg rx_busy_reg;
 reg [3:0] bitcnt;
-reg [9:0] txdata_latched;
+reg [7:0] rxdata_reg;
 
 // ----------------------------------------------------------------------------
-//
+// 
 // ----------------------------------------------------------------------------
 always @(posedge clk) begin
   // --------------------------------------------------------------------------
   if(rst == 1) begin
-    txcnt <= 0;
+    rxcnt <= 0;
     bitcnt <= 0;
-    tx_busy_reg <= 0;
+    rxdata <= 0;
+    rx_pin_d <= 0;
+    rxdata_reg <= 0;
   // --------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------
-  end else if(!tx_busy_reg) begin
-    if(tx_start == 1) begin
-      bitcnt <= 8;
-      tx_busy <= 1;
-      txcnt <= (CLKDIV-1);
-      tx_busy_reg <= 1;
-      txdata_latched <= {1'd1, txdata, 1'b0}; // 1b STOP + 8b DATA + 1b START
+  end else if(!rx_busy_reg) begin    
+    if(rxack == 1) begin
+      rxvalid <= 0;  
     end else begin
-      tx_busy <= 0;
+      if((rx_pin == 0)&&(rx_pin_d == 1)) begin
+        bitcnt <= 8;
+        rxdata_reg <= 0;
+        rx_busy_reg <= 1;
+        rxcnt <= ((3*HALF_PERIOD)-1);
+      end else begin
+        rxdata <= rxdata_reg;
+      end
+      rx_pin_d <= rx_pin;
     end
   // --------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------
-  end else if(txcnt) begin
-    txcnt <= txcnt - 1;
+  end else if(rxcnt) begin
+    rxcnt <= rxcnt - 1;
   // --------------------------------------------------------------------------
   // 
   // --------------------------------------------------------------------------
   end else begin
-    if(bitcnt) begin
-      bitcnt <= bitcnt - 1;
+    rxcnt <= (CLKDIV-1);
+    if(bitcnt == 0) begin
+      rxvalid <= 1;
+      rx_busy_reg <= 0;
     end else begin
-      tx_busy_reg <= 0; 
-    end        
-    txcnt <= (CLKDIV-1);
-    txdata_latched = {1'b1, txdata_latched[8:1]};
+      bitcnt <= bitcnt - 1;      
+      rxdata_reg = {rx_pin, rxdata_reg[7:1]};
+    end            
   end
 end
-
-// ----------------------------------------------------------------------------
-assign tx_pin = txdata_latched[0];
 
 endmodule

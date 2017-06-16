@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 PROJ     = top
 SOURCES  = common/clockgen.v
-SOURCES += common/uart_tx.v
+SOURCES += common/uart_tx.v common/uart_rx.v
 PIN_DEF  = pinmap.pcf
 DEVICE   = hx8k
 

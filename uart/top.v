@@ -4,7 +4,9 @@
 // ----------------------------------------------------------------------------
 // <ihsan@kehribar.me> - 2017
 // ----------------------------------------------------------------------------
-module top(
+module top
+(
+  // --------------------------------------------------------------------------
   input clk12,
   output LED0,
   output LED1,
@@ -14,20 +16,32 @@ module top(
   output LED5,
   output LED6,
   output LED7,
+  // --------------------------------------------------------------------------
+  output DBG0,
+  output DBG1,
+  output DBG2,
+  output DBG3,
+  output DBG4,
+  output DBG5,
+  output DBG6,
+  output DBG7,
+  // --------------------------------------------------------------------------
   input RX,
   output TX  
 );
 
   // --------------------------------------------------------------------------
-  wire rst;
-  wire clk60;
-  wire tx_busy;
-  wire tx_reg;
+  reg TX_reg;
 
   // --------------------------------------------------------------------------
-  reg tx_start;
-  reg tx_busy_d;
-  reg [7:0] test_char;
+  wire rst;
+  wire clk60;
+  wire rxack;
+  wire tx_busy;
+  wire rxvalid;
+  wire tx_start;
+  wire [7:0] test_char;
+  wire [7:0] debugSignals;
 
   // --------------------------------------------------------------------------
   clockgen #()
@@ -36,39 +50,43 @@ module top(
     .clkout(clk60),
     .reset(rst)
   );
-  
-  // --------------------------------------------------------------------------
-  always @(posedge clk60) begin
-    if(rst == 1) begin   
-      tx_start <= 1'b1;
-      tx_busy_d <= 1'b1;
-      test_char <= 8'b0;
-    end else begin    
-      if((tx_busy == 1'b0)&&(tx_busy_d == 1'b1)) begin
-        tx_start <= 1'b1;              
-        test_char <= test_char + 1;
-      end else begin
-        tx_start <= 1'b0;     
-      end
-      tx_busy_d <= tx_busy;
-    end
-  end
 
   // --------------------------------------------------------------------------
   uart_tx #(
-    .CLKDIV(60-1) // (60MHz / 1MBaud) = 60
+    .CLKDIV(60)
   )
-  uart_inst(
+  uart_tx_inst(
     .clk(clk60),
     .rst(rst),
     .txdata(test_char),
-    .transmit(tx_start),
-    .tx_pin(tx_reg),
+    .tx_start(tx_start),
+    .tx_pin(TX_reg),
     .tx_busy(tx_busy)
   );
 
   // --------------------------------------------------------------------------
-  assign TX = tx_reg;
-  assign {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7} = {8{test_char}};
+  uart_rx #(
+    .CLKDIV(60)
+  )
+  uart_rx_inst(
+    .clk(clk60),
+    .rst(rst),
+    .rxdata(test_char),
+    .rx_pin(RX),
+    .rxvalid(rxvalid),
+    .rxack(rxack)
+  );  
+
+  // --------------------------------------------------------------------------
+  assign tx_start = rxvalid;
+  assign rxack = tx_busy;
+  
+  // --------------------------------------------------------------------------
+  assign {DBG0, DBG1, DBG2, DBG3, DBG4, DBG5, DBG6, DBG7} = {debugSignals};
+  assign {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7} = {debugSignals};
+  assign debugSignals = {RX, TX_reg, 1'b0, rxack, tx_start, 1'b1, 1'b1, 1'b1};  
+
+  // --------------------------------------------------------------------------
+  assign TX = TX_reg;
 
 endmodule
