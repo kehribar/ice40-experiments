@@ -79,7 +79,7 @@ module top
 
   // --------------------------------------------------------------------------
   assign tx_start = rxvalid;
-  assign rxack = tx_busy;
+  assign rxack = tx_busy & rxvalid;
   
   // --------------------------------------------------------------------------
   assign {DBG0, DBG1, DBG2, DBG3, DBG4, DBG5, DBG6, DBG7} = {debugSignals};

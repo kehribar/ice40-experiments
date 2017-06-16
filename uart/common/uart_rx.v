@@ -37,19 +37,16 @@ always @(posedge clk) begin
   // --------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------
-  end else if(!rx_busy_reg) begin    
-    if(rxack == 1) begin
+  end else if(!rx_busy_reg) begin        
+    if((rx_pin == 0)&&(rx_pin_d == 1)) begin
+      bitcnt <= 8;
+      rxdata_reg <= 0;
+      rx_busy_reg <= 1;
+      rxcnt <= ((3*HALF_PERIOD)-1);    
+    end
+    rx_pin_d <= rx_pin;
+    if(rxack) begin
       rxvalid <= 0;  
-    end else begin
-      if((rx_pin == 0)&&(rx_pin_d == 1)) begin
-        bitcnt <= 8;
-        rxdata_reg <= 0;
-        rx_busy_reg <= 1;
-        rxcnt <= ((3*HALF_PERIOD)-1);
-      end else begin
-        rxdata <= rxdata_reg;
-      end
-      rx_pin_d <= rx_pin;
     end
   // --------------------------------------------------------------------------
   //
@@ -64,6 +61,7 @@ always @(posedge clk) begin
     if(bitcnt == 0) begin
       rxvalid <= 1;
       rx_busy_reg <= 0;
+      rxdata <= rxdata_reg;
     end else begin
       bitcnt <= bitcnt - 1;      
       rxdata_reg = {rx_pin, rxdata_reg[7:1]};
