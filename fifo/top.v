@@ -32,6 +32,8 @@ module top
 
   // --------------------------------------------------------------------------
   reg TX_reg;
+  reg fifo_full;
+  reg fifo_empty;
 
   // --------------------------------------------------------------------------
   wire rst;
@@ -44,6 +46,14 @@ module top
   wire [7:0] debugSignals;
 
   // --------------------------------------------------------------------------
+  reg [8:0] used_slots;
+  reg [8:0] free_slots;
+  reg [7:0] fifo_din;
+  reg [7:0] fifo_dout;
+  reg fifo_shift_in;
+  reg fifo_shift_out;
+
+  // --------------------------------------------------------------------------
   clockgen #()
   clockgen_inst(
     .clk(clk12),
@@ -53,12 +63,12 @@ module top
 
   // --------------------------------------------------------------------------
   uart_tx #(
-    .CLKDIV(5)
+    .CLKDIV(15)
   )
   uart_tx_inst(
     .clk(clk60),
     .rst(rst),
-    .txdata(test_char),
+    .txdata(fifo_dout),
     .tx_start(tx_start),
     .tx_pin(TX_reg),
     .tx_busy(tx_busy)
@@ -66,25 +76,60 @@ module top
 
   // --------------------------------------------------------------------------
   uart_rx #(
-    .CLKDIV(5)
+    .CLKDIV(15)
   )
   uart_rx_inst(
     .clk(clk60),
     .rst(rst),
-    .rxdata(test_char),
+    .rxdata(fifo_din),
     .rx_pin(RX),
     .rxvalid(rxvalid),
     .rxack(rxack)
   );  
 
   // --------------------------------------------------------------------------
-  assign tx_start = rxvalid;
-  assign rxack = tx_busy & rxvalid;
-  
+  fifo #()
+  fifo_inst(
+    .clk(clk60),
+    .resetn(!rst),
+    .din(fifo_din),
+    .dout(fifo_dout),
+    .shift_in(fifo_shift_in),
+    .shift_out(fifo_shift_out),
+    .used_slots(used_slots),
+    .free_slots(free_slots),
+  );
+
+  // --------------------------------------------------------------------------
+  assign fifo_shift_in = rxvalid & rxack;
+  assign fifo_shift_out = tx_start & (!tx_busy);
+
+  // --------------------------------------------------------------------------
+  always @(posedge clk60) begin
+    if(rst) begin
+      rxack <= 0;
+      tx_start <= 0;
+    end else begin
+      // ----------------------------------------------------------------------
+      if(used_slots != 9'b0) begin
+        tx_start <= 1;        
+      end else begin
+        tx_start <= 0;        
+      end    
+      // ----------------------------------------------------------------------
+      if(rxvalid & (free_slots != 9'b0)) begin
+        rxack <= 1;        
+      end else begin
+        rxack <= 0;        
+      end    
+      // ----------------------------------------------------------------------
+    end
+  end
+
   // --------------------------------------------------------------------------
   assign {DBG0, DBG1, DBG2, DBG3, DBG4, DBG5, DBG6, DBG7} = {debugSignals};
   assign {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7} = {debugSignals};
-  assign debugSignals = {RX, TX_reg, 1'b0, rxack, tx_start, 1'b1, 1'b1, 1'b1};  
+  assign debugSignals = {RX, TX_reg, rxack, tx_start, fifo_shift_in, fifo_shift_out, 1'b0, rst};  
 
   // --------------------------------------------------------------------------
   assign TX = TX_reg;
