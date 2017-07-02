@@ -102,7 +102,7 @@ module top
 
   // --------------------------------------------------------------------------
   assign fifo_shift_in = rxvalid & rxack;
-  assign fifo_shift_out = tx_start & (!tx_busy);
+  assign fifo_shift_out = tx_start;
 
   // --------------------------------------------------------------------------
   always @(posedge clk60) begin
@@ -111,7 +111,7 @@ module top
       tx_start <= 0;
     end else begin
       // ----------------------------------------------------------------------
-      if(used_slots != 9'b0) begin
+      if((used_slots != 9'b0) & (!tx_busy)) begin
         tx_start <= 1;        
       end else begin
         tx_start <= 0;        
@@ -129,7 +129,7 @@ module top
   // --------------------------------------------------------------------------
   assign {DBG0, DBG1, DBG2, DBG3, DBG4, DBG5, DBG6, DBG7} = {debugSignals};
   assign {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7} = {debugSignals};
-  assign debugSignals = {RX, TX_reg, rxack, tx_start, fifo_shift_in, fifo_shift_out, 1'b0, rst};  
+  assign debugSignals = {RX, TX_reg, rxack, tx_start, fifo_shift_in, fifo_shift_out, 1'b0, tx_busy};  
 
   // --------------------------------------------------------------------------
   assign TX = TX_reg;

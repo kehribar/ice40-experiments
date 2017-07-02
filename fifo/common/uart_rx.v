@@ -34,8 +34,6 @@ always @(posedge clk) begin
     rxdata <= 0;
     rx_pin_d <= 0;
     rxdata_reg <= 0;
-    rx_busy_reg <= 0;
-    rxvalid <= 0;
   // --------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------
@@ -66,8 +64,8 @@ always @(posedge clk) begin
       rxdata <= rxdata_reg;
     end else begin
       bitcnt <= bitcnt - 1;      
-      rxdata_reg = {rx_pin, rxdata_reg[7:1]};
-    end            
+      rxdata_reg <= {rx_pin, rxdata_reg[7:1]};
+    end
   end
 end
 
