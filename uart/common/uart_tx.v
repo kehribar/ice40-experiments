@@ -9,7 +9,7 @@ module uart_tx #(
   input rst,
   input tx_start,
   output tx_pin,
-  output tx_busy,
+  output reg tx_busy,
   input [7:0] txdata
 );
 
@@ -17,9 +17,12 @@ module uart_tx #(
 reg [$clog2(CLKDIV-1):0] txcnt;
 
 // ----------------------------------------------------------------------------
-reg tx_busy_reg;
+reg txFlag;
 reg [3:0] bitcnt;
 reg [9:0] txdata_latched;
+
+// ----------------------------------------------------------------------------
+assign tx_busy = tx_start ^ txFlag;
 
 // ----------------------------------------------------------------------------
 //
@@ -29,19 +32,17 @@ always @(posedge clk) begin
   if(rst == 1) begin
     txcnt <= 0;
     bitcnt <= 0;
-    tx_busy_reg <= 0;
+    txFlag <= 0;
+    txdata_latched <= {10'b1};
   // --------------------------------------------------------------------------
   //
   // --------------------------------------------------------------------------
-  end else if(!tx_busy_reg) begin
+  end else if(!txFlag) begin
     if(tx_start == 1) begin
-      bitcnt <= 8;
-      tx_busy <= 1;
+      txFlag <= 1;
+      bitcnt <= 9;      
       txcnt <= (CLKDIV-1);
-      tx_busy_reg <= 1;
       txdata_latched <= {1'd1, txdata, 1'b0}; // 1b STOP + 8b DATA + 1b START
-    end else begin
-      tx_busy <= 0;
     end
   // --------------------------------------------------------------------------
   //
@@ -54,11 +55,11 @@ always @(posedge clk) begin
   end else begin
     if(bitcnt) begin
       bitcnt <= bitcnt - 1;
+      txcnt <= (CLKDIV-1);
+      txdata_latched <= {1'b1, txdata_latched[9:1]};
     end else begin
-      tx_busy_reg <= 0; 
+      txFlag <= 0;  
     end        
-    txcnt <= (CLKDIV-1);
-    txdata_latched = {1'b1, txdata_latched[8:1]};
   end
 end
 

@@ -53,10 +53,10 @@ module top
 
   // --------------------------------------------------------------------------
   uart_tx #(
-    .CLKDIV(5)
+    .CLKDIV(12)
   )
   uart_tx_inst(
-    .clk(clk60),
+    .clk(clk12),
     .rst(rst),
     .txdata(test_char),
     .tx_start(tx_start),
@@ -66,10 +66,10 @@ module top
 
   // --------------------------------------------------------------------------
   uart_rx #(
-    .CLKDIV(5)
+    .CLKDIV(12)
   )
   uart_rx_inst(
-    .clk(clk60),
+    .clk(clk12),
     .rst(rst),
     .rxdata(test_char),
     .rx_pin(RX),
@@ -78,13 +78,16 @@ module top
   );  
 
   // --------------------------------------------------------------------------
-  assign tx_start = rxvalid;
-  assign rxack = tx_busy & rxvalid;
+  always @(posedge clk12) begin
+    tx_start <= rxvalid & !tx_busy;
+  end
+
+  assign rxack = tx_start & tx_busy;
   
   // --------------------------------------------------------------------------
   assign {DBG0, DBG1, DBG2, DBG3, DBG4, DBG5, DBG6, DBG7} = {debugSignals};
   assign {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7} = {debugSignals};
-  assign debugSignals = {RX, TX_reg, 1'b0, rxack, tx_start, 1'b1, 1'b1, 1'b1};  
+  assign debugSignals = {RX, TX_reg, tx_busy, rxack, tx_start, rxvalid, clk12, 1'b1};  
 
   // --------------------------------------------------------------------------
   assign TX = TX_reg;
