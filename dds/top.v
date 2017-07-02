@@ -106,7 +106,7 @@ module top
   always @(*) begin
     case(addr)
       7'h01: rdat = phaseInc;
-      7'h7f: rdat = tmp32;
+      7'h02: rdat = tmp32;
       default: rdat = 32'hDEADC0DE;
     endcase
   end
@@ -119,7 +119,7 @@ module top
       if(we) begin
         case(addr)
           7'h01: phaseInc <= wdat;
-          7'h7F: tmp32 <= wdat;
+          7'h02: tmp32 <= wdat;
         endcase
       end
     end
