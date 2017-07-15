@@ -28,16 +28,17 @@ print "Start the test ..."
 
 while True:	
 
-	for x in xrange(5000,70000):	
+	for x in xrange(50000,70000):	
 		phaseInc = int(float(x) / F_INCREMENT);
 
 		buf[0] = ADDRESS
 		buf[1:5] = bytearray(struct.pack(">i", phaseInc))
 
 		sp.write(buf[0:5])
+		
+		time.sleep(0.1)
 
-		# Sleep ~1ms
-		time.sleep(0.0001)
+		x += 1000
 
 #------------------------------------------------------------------------------
 sp.close()

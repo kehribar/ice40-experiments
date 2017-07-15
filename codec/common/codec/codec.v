@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 // 
 // ----------------------------------------------------------------------------
-// * ADC is not yet implemented.
+// * ADC data is left adjusted.
 // * DAC data is right adjusted.
 // * Frequency ratios between generated clocks:
 //     MCLK: clk  / 2
@@ -15,6 +15,10 @@ module codec(
   // --------------------------------------------------------------------------
   input [23:0] LCH_DAC,
   input [23:0] RCH_DAC,
+    // --------------------------------------------------------------------------
+  output reg [23:0] LCH_ADC,
+  output reg [23:0] RCH_ADC,
+  output reg        ADC_Update,
   // --------------------------------------------------------------------------
   output reg PDN,
   output reg LRCK,
@@ -28,13 +32,13 @@ module codec(
 // ----------------------------------------------------------------------------
 // 
 // ----------------------------------------------------------------------------
-reg BCLK_d;
 reg [1:0] bclk_cnt;
 reg [7:0] lrck_cnt;
 reg [15:0] pdn_cnt;
-reg [31:0] dacRegister;
-reg [23:0] LCH_DAC_latched;
-reg [23:0] RCH_DAC_latched;
+
+// ----------------------------------------------------------------------------
+reg [63:0] adcRegister;
+reg [63:0] dacRegister;
 
 // ----------------------------------------------------------------------------
 // 
@@ -44,12 +48,15 @@ always @(posedge clk) begin
     PDN <= 0;
     MCLK <= 0;
     LRCK <= 0;
-    BCLK <= 0;
-    BCLK_d <= 0;    
+    BCLK <= 1;
+    LCH_ADC <= 0;
+    RCH_ADC <= 0;
     lrck_cnt <= 0;
     bclk_cnt <= 0;    
-    pdn_cnt <= 16'hFFFF;
+    ADC_Update <= 0;
     dacRegister <= 0;
+    adcRegister <= 0;
+    pdn_cnt <= 16'hFFFF;
   end else begin
 
     // ------------------------------------------------------------------------
@@ -68,7 +75,7 @@ always @(posedge clk) begin
       // ----------------------------------------------------------------------
       if(!lrck_cnt) begin
         LRCK <= !LRCK;
-        lrck_cnt <= 8'd191;        
+        lrck_cnt <= 8'd191;      
       end else begin
         lrck_cnt <= lrck_cnt - 1;      
       end
@@ -78,25 +85,31 @@ always @(posedge clk) begin
       // ----------------------------------------------------------------------      
       if(!bclk_cnt) begin
         BCLK <= !BCLK;
-        BCLK_d <= BCLK;
         bclk_cnt <= 2'd2;
-        if(BCLK_d & !BCLK) begin
-          if(!lrck_cnt) begin        
-            LCH_DAC_latched <= LCH_DAC;
-            RCH_DAC_latched <= RCH_DAC;
-            if(LRCK) begin
-              dacRegister[23:0] <= LCH_DAC_latched;
-            end else begin
-              dacRegister[23:0] <= RCH_DAC_latched;          
-            end
+
+        if(BCLK) begin        
+          if(!lrck_cnt & !LRCK) begin          
+            dacRegister[23:00] <= LCH_DAC;
+            dacRegister[55:32] <= RCH_DAC;            
+            RCH_ADC <= adcRegister[63:40];
+            LCH_ADC <= adcRegister[31:08];
+            ADC_Update <= 1;      
           end else begin
-            dacRegister <= {dacRegister[30:0], 1'b0};
+            ADC_Update <= 0;      
+            dacRegister <= {dacRegister[62:0], 1'b0};         
           end
         end
+
+        if(!BCLK) begin  
+          adcRegister <= {adcRegister[62:0], SDTI};    
+        end
+      
+      // -----------------------------------------------------------------------
       end else begin
         bclk_cnt <= bclk_cnt - 1;      
       end
-
+    
+    // ------------------------------------------------------------------------
     end else begin
       pdn_cnt <= pdn_cnt - 1;
     end
@@ -106,6 +119,6 @@ end
 // ----------------------------------------------------------------------------
 // 
 // ----------------------------------------------------------------------------
-assign SDTO = dacRegister[31];
+assign SDTO = dacRegister[63];
 
 endmodule

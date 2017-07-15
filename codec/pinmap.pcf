@@ -33,4 +33,4 @@ set_io MCLK C1
 set_io LRCK D1
 set_io BCLK E2
 set_io SDTO F2
-# set_io SDTI G2
+set_io SDTI G2

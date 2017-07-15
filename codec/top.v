@@ -32,6 +32,7 @@ module top
   output LRCK,
   output BCLK,
   output SDTO,
+  input  SDTI,
   // --------------------------------------------------------------------------
   input RX,
   output TX  
@@ -61,10 +62,38 @@ module top
   wire rxack;
 
   // --------------------------------------------------------------------------
-  signed wire [15:0] sin;
-  // signed wire [15:0] sin_summed;
-  wire [1:0] quadSampleState;
   reg [31:0] phaseInc;
+  wire signed [15:0] sin;
+
+  wire [23:0] testData;
+  wire [23:0] adc_data_L;
+  wire [23:0] adc_data_R;
+
+  assign testData = {sin, 8'h00};
+
+  // ----------------------------------------------------------------------------
+  always @(*) begin
+    case(addr)
+      7'h01: rdat = phaseInc;
+      7'h02: rdat = tmp32;
+      7'h03: rdat = {adc_data_R, 8'h00};
+      default: rdat = 32'hDEADC0DE;
+    endcase
+  end
+
+  // ----------------------------------------------------------------------------
+  always @(posedge clk60) begin
+    if(rst) begin
+      phaseInc <= 32'd500000;
+    end else begin
+      if(we) begin
+        case(addr)
+          7'h01: phaseInc <= wdat;
+          7'h02: tmp32 <= wdat;
+        endcase
+      end
+    end
+  end
 
   // --------------------------------------------------------------------------
   clockgen #()
@@ -101,35 +130,12 @@ module top
   );  
 
   // ----------------------------------------------------------------------------
-  always @(*) begin
-    case(addr)
-      7'h01: rdat = phaseInc;
-      7'h02: rdat = tmp32;
-      default: rdat = 32'hDEADC0DE;
-    endcase
-  end
-
-  // ----------------------------------------------------------------------------
-  always @(posedge clk60) begin
-    if(rst) begin
-      phaseInc <= 32'd100000;
-    end else begin
-      if(we) begin
-        case(addr)
-          7'h01: phaseInc <= wdat;
-          7'h02: tmp32 <= wdat;
-        endcase
-      end
-    end
-  end
-
-  // ----------------------------------------------------------------------------
   dds dds_inst(
     .clk(clk60),
     .rst(rst),
     .phaseInc(phaseInc),
     .sin(sin),
-    .quadSampleState(quadSampleState)
+    .quadSampleState()
   );
 
   // ----------------------------------------------------------------------------
@@ -148,17 +154,17 @@ module top
     .rxack(rxack)
   );
 
-  wire [23:0] testData;
-
-  assign testData = {sin, 8'h00};
-
+  // ----------------------------------------------------------------------------
   codec codec_inst(
     .clk(clk60),
     .rst(rst),
     .LCH_DAC(testData),
-    .RCH_DAC(testData),    
-    // .SDTI(SDTI),
+    .RCH_DAC(adc_data_L),    
+    .LCH_ADC(adc_data_L),
+    .RCH_ADC(adc_data_R),
+    .ADC_Update(),
     .PDN(PDN),
+    .SDTI(SDTI),
     .LRCK(LRCK),
     .BCLK(BCLK),
     .SDTO(SDTO),

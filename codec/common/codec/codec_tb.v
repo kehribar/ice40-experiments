@@ -26,9 +26,9 @@ initial begin
   $dumpvars(0, codec_inst);
   clk <= 1;
   rst <= 1;  
-  testData <= 24'hFFFFFF;
+  testData <= 24'hA5A5AF;
   #50 rst <= 0;
-  #2500 $finish;
+  #205000 $finish;
 end
 
 // ----------------------------------------------------------------------------
@@ -45,12 +45,15 @@ always begin
   #1 clk = ~clk;
 end
 
+wire [23:0] adcVal;
+
 codec codec_inst(
   .clk(clk),
   .rst(rst),
   .LCH_DAC(testData),
-  .RCH_DAC(testData),
-  // .SDTI(SDTI),
+  .RCH_DAC(adcVal),
+  .RCH_ADC(adcVal),
+  .SDTI(1'b1),
   .PDN(PDN),
   .LRCK(LRCK),
   .BCLK(BCLK),
