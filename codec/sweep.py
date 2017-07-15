@@ -28,7 +28,8 @@ print "Start the test ..."
 
 while True:	
 
-	for x in xrange(50000,70000):	
+	x = 10000
+	while (x < 70000):	
 		phaseInc = int(float(x) / F_INCREMENT);
 
 		buf[0] = ADDRESS
